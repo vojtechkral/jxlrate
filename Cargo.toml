@@ -1,0 +1,12 @@
+[package]
+name = "jxlrate"
+version = "0.1.0"
+authors = ["Vojtech Kral <vojtech@kral.hk>"]
+edition = "2018"
+
+[dependencies]
+thiserror = "1.0"
+typenum = "1.13.0"
+
+[dev-dependencies]
+lazy_static = "1.4.0"
