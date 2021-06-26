@@ -1,16 +1,11 @@
 use std::io::Read;
 use std::marker::PhantomData;
-use std::ops;
+use std::cmp::{Ordering, PartialEq, PartialOrd};
 
 use typenum::{Unsigned, U2};
 
-use crate::bitstream::BitReader;
+use crate::bitstream::{FromBits, BitReader};
 use crate::error::*;
-
-/// Types that can be decoded from the bitstream
-pub trait FromBits<R>: Sized {
-    fn from_bits(reader: &mut BitReader<R>) -> Result<Self>;
-}
 
 impl<R> FromBits<R> for bool
 where
@@ -38,11 +33,30 @@ where
 }
 
 /// N-bit direct-coded number (max 32 bits, LE).
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Bits<N>(pub u32, PhantomData<N>);
+
+impl<N> From<u32> for Bits<N> {
+    fn from(u: u32) -> Self {
+        Self(u, PhantomData)
+    }
+}
 
 impl<N> From<Bits<N>> for u32 {
     fn from(this: Bits<N>) -> Self {
         this.0
+    }
+}
+
+impl<N> PartialEq<u32> for Bits<N> {
+    fn eq(&self, other: &u32) -> bool {
+        self.0.eq(other)
+    }
+}
+
+impl<N> PartialOrd<u32> for Bits<N> {
+    fn partial_cmp(&self, other: &u32) -> Option<Ordering> {
+        self.0.partial_cmp(other)
     }
 }
 
@@ -59,11 +73,30 @@ where
 
 /// N-bit number encoded with an offest subtracted first,
 /// then coding directly (LE).
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct BitsOffset<N, O>(pub u32, PhantomData<(N, O)>);
+
+impl<N, O> From<u32> for BitsOffset<N, O> {
+    fn from(u: u32) -> Self {
+        Self(u, PhantomData)
+    }
+}
 
 impl<N, O> From<BitsOffset<N, O>> for u32 {
     fn from(this: BitsOffset<N, O>) -> Self {
         this.0
+    }
+}
+
+impl<N, O> PartialEq<u32> for BitsOffset<N, O> {
+    fn eq(&self, other: &u32) -> bool {
+        self.0.eq(other)
+    }
+}
+
+impl<N, O> PartialOrd<u32> for BitsOffset<N, O> {
+    fn partial_cmp(&self, other: &u32) -> Option<Ordering> {
+        self.0.partial_cmp(other)
     }
 }
 
@@ -81,11 +114,30 @@ where
 }
 
 /// TODO: Explain this stuff
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct PrefixU32<D0, D1, D2, D3>(pub u32, PhantomData<fn() -> (D0, D1, D2, D3)>);
+
+impl<D0, D1, D2, D3> From<u32> for PrefixU32<D0, D1, D2, D3> {
+    fn from(u: u32) -> Self {
+        Self(u, PhantomData)
+    }
+}
 
 impl<D0, D1, D2, D3> From<PrefixU32<D0, D1, D2, D3>> for u32 {
     fn from(this: PrefixU32<D0, D1, D2, D3>) -> Self {
         this.0
+    }
+}
+
+impl<D0, D1, D2, D3> PartialEq<u32> for PrefixU32<D0, D1, D2, D3> {
+        fn eq(&self, other: &u32) -> bool {
+        self.0.eq(other)
+    }
+}
+
+impl<D0, D1, D2, D3> PartialOrd<u32> for PrefixU32<D0, D1, D2, D3> {
+    fn partial_cmp(&self, other: &u32) -> Option<Ordering> {
+        self.0.partial_cmp(other)
     }
 }
 
@@ -109,16 +161,5 @@ where
         };
 
         Ok(Self(x, PhantomData))
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Rational(pub u32, pub u32);
-
-impl ops::Mul<u32> for Rational {
-    type Output = u32;
-
-    fn mul(self, rhs: u32) -> Self::Output {
-        (rhs as u64 * self.0 as u64) as u32 / self.1
     }
 }

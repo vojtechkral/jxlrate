@@ -19,7 +19,8 @@ fn read_header_large() {
     let file = File::open(IMGS.join("resf.jxl")).unwrap();
     let decoder = Decoder::new(file);
     let header = decoder.read_header().unwrap().0;
-    dbg!(header);
+    assert_eq!(header.width, 419);
+    assert_eq!(header.height, 300);
 }
 
 #[test]
@@ -27,5 +28,6 @@ fn read_header_ratio() {
     let file = File::open(IMGS.join("ratio.jxl")).unwrap();
     let decoder = Decoder::new(file);
     let header = decoder.read_header().unwrap().0;
-    dbg!(header);
+    assert_eq!(header.width, 375);
+    assert_eq!(header.height, 300);
 }

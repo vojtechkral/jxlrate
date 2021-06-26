@@ -1,6 +1,7 @@
-pub(crate) mod bitstream;
+#[macro_use] pub(crate) mod bitstream;
 pub(crate) mod decoder;
 pub(crate) mod error;
+pub(crate) mod utils;
 
 pub use decoder::Decoder;
 
