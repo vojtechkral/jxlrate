@@ -30,7 +30,7 @@ impl SizeHeader {
     ];
 }
 
-bitstream!(SizeHeader as this
+bundle!(SizeHeader as this
     fields {
         small: bool = false,
         [if small] h_small: SizeSmall = 0,

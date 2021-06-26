@@ -26,7 +26,7 @@ pub trait ToBits<W>: Sized {
     fn to_bits(&self, writer: &mut BitWriter<W>) -> Result<()>;
 }
 
-macro_rules! bitstream {
+macro_rules! bundle {
     (
         $ty:ty as $self:ident
         fields {
@@ -44,11 +44,22 @@ macro_rules! bitstream {
             fn read_bits(&mut self, reader: &mut $crate::bitstream::BitReader<R>) -> $crate::error::Result<()> {
                 let $self = self;
 
+                if cfg!(feature = "bitstream_debug") {
+                    eprintln!("=> Reading Bundle `{}`", stringify!($ty));
+                }
+
                 $(
-                    bitstream!(@field_read reader, $field, $fty, $default $(, $cond)?);
+                    bundle!(@field_read reader, $field, $fty, $default $(, $cond)?);
+                    if cfg!(feature = "bitstream_debug") {
+                        eprintln!("  {} = {:?}", stringify!($field), $field);
+                    }
                 )+
 
-                $read
+                let res = $read;
+                if cfg!(feature = "bitstream_debug") {
+                    eprintln!("<= Done reading Bundle `{}`, result: {:?}", stringify!($ty), res);
+                }
+                res
             }
         }
 
@@ -59,7 +70,7 @@ macro_rules! bitstream {
             #[allow(unreachable_code)]
             fn to_bits(&self, writer: &mut $crate::bitstream::BitWriter<W>) -> $crate::error::Result<()> {
                 $(
-                    bitstream!(@field_write_decl $field, $fty, $default $(, $cond)?);
+                    bundle!(@field_write_decl $field, $fty, $default $(, $cond)?);
                 )+
 
                 #[allow(unused)]
@@ -67,7 +78,7 @@ macro_rules! bitstream {
                 $write
 
                 $(
-                    bitstream!(@field_write writer, $field, $fty, $default $(, $cond)?);
+                    bundle!(@field_write writer, $field, $fty, $default $(, $cond)?);
                 )+
 
                 Ok(())

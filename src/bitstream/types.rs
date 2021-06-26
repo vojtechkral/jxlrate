@@ -172,6 +172,10 @@ where
     fn from_bits(reader: &mut BitReader<R>) -> Result<Self> {
         let selector = Bits::<U2>::from_bits(reader)?.0;
 
+        if cfg!(feature = "bitstream_debug") {
+            eprintln!("PrefixU32 selector: 0x{:x}", selector);
+        }
+
         let x = match selector {
             0 => reader.read::<D0>()?.into(),
             1 => reader.read::<D1>()?.into(),
