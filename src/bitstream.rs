@@ -11,7 +11,13 @@ pub use types::*;
 /// Methods for decoding a type from the bitstream.
 /// Implementations for basic types are defined in `types`.
 pub trait FromBits<R>: Sized {
-    fn from_bits(reader: &mut BitReader<R>) -> Result<Self>;
+    fn read_bits(&mut self, reader: &mut BitReader<R>) -> Result<()>;
+
+    fn from_bits(reader: &mut BitReader<R>) -> Result<Self> where Self: Default {
+        let mut this: Self = Default::default();
+        this.read_bits(reader)?;
+        Ok(this)
+    }
 }
 
 /// Methods for encoding a type to the bitstream.
@@ -22,20 +28,22 @@ pub trait ToBits<W>: Sized {
 
 macro_rules! bitstream {
     (
-        $ty:ty where
+        $ty:ty as $self:ident
         fields {
             $(
                 $([if $cond:expr])? $field:ident : $fty:ty = $default:expr ,
             )+
         }
         read $read:block
-        write $self:ident $write:block
+        write $write:block
     ) => {
         impl<R> $crate::bitstream::FromBits<R> for $ty
         where
             R: std::io::Read,
         {
-            fn from_bits(reader: &mut $crate::bitstream::BitReader<R>) -> $crate::error::Result<Self> {
+            fn read_bits(&mut self, reader: &mut $crate::bitstream::BitReader<R>) -> $crate::error::Result<()> {
+                let $self = self;
+
                 $(
                     bitstream!(@field_read reader, $field, $fty, $default $(, $cond)?);
                 )+

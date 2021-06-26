@@ -12,7 +12,7 @@ type SizeSmall = Bits<U5>;
 type SizeLarge =
     PrefixU32<BitsOffset<U9, U1>, BitsOffset<U13, U1>, BitsOffset<U18, U1>, BitsOffset<U30, U1>>;
 
-#[derive(Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct SizeHeader {
     pub width: u32,
     pub height: u32,
@@ -30,7 +30,7 @@ impl SizeHeader {
     ];
 }
 
-bitstream!(SizeHeader where
+bitstream!(SizeHeader as this
     fields {
         small: bool = false,
         [if small] h_small: SizeSmall = 0,
@@ -40,18 +40,18 @@ bitstream!(SizeHeader where
         [if ratio == 0 && !small] w_large: SizeLarge = 0,
     }
     read {
-        let height = if small { h_small.0 } else { h_large.0 };
-        let width = if ratio > 0 {
-            SizeHeader::RATIOS[ratio.0 as usize - 1] * height
+        this.height = if small { h_small.0 } else { h_large.0 };
+        this.width = if ratio > 0 {
+            SizeHeader::RATIOS[ratio.0 as usize - 1] * this.height
         } else if small {
             w_small.0
         } else {
             w_large.0
         };
 
-        Ok(SizeHeader { width, height })
+        Ok(())
     }
-    write this {
+    write {
         todo!()
     }
 );

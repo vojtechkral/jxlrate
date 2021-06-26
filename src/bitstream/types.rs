@@ -14,11 +14,17 @@ where
     fn from_bits(reader: &mut BitReader<R>) -> Result<Self> {
         reader.read_bits(1).map(|b| b == 1)
     }
+
+    fn read_bits(&mut self, reader: &mut BitReader<R>) -> Result<()> {
+        *self = Self::from_bits(reader)?;
+        Ok(())
+    }
 }
 
 /// Static constant number (known ahead of time),
 /// takes zero bits in the bitstream.
 /// Mostly useful with `PrefixU32`.
+#[derive(Clone, Copy, Default, Debug)]
 pub struct Const<X>(PhantomData<X>);
 
 impl<R, X> FromBits<R> for Const<X>
@@ -30,10 +36,14 @@ where
         // Const value, ie. no reading from the bitstream needed
         Ok(Self(PhantomData))
     }
+
+    fn read_bits(&mut self, reader: &mut BitReader<R>) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// N-bit direct-coded number (max 32 bits, LE).
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Bits<N>(pub u32, PhantomData<N>);
 
 impl<N> From<u32> for Bits<N> {
@@ -69,11 +79,16 @@ where
         let x = reader.read_bits(N::to_u32())?;
         Ok(Self(x as u32, PhantomData))
     }
+
+    fn read_bits(&mut self, reader: &mut BitReader<R>) -> Result<()> {
+        *self = Self::from_bits(reader)?;
+        Ok(())
+    }
 }
 
 /// N-bit number encoded with an offest subtracted first,
 /// then coding directly (LE).
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct BitsOffset<N, O>(pub u32, PhantomData<(N, O)>);
 
 impl<N, O> From<u32> for BitsOffset<N, O> {
@@ -111,10 +126,15 @@ where
         let x = x as u32 + O::to_u32();
         Ok(Self(x, PhantomData))
     }
+
+    fn read_bits(&mut self, reader: &mut BitReader<R>) -> Result<()> {
+        *self = Self::from_bits(reader)?;
+        Ok(())
+    }
 }
 
 /// TODO: Explain this stuff
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct PrefixU32<D0, D1, D2, D3>(pub u32, PhantomData<fn() -> (D0, D1, D2, D3)>);
 
 impl<D0, D1, D2, D3> From<u32> for PrefixU32<D0, D1, D2, D3> {
@@ -144,10 +164,10 @@ impl<D0, D1, D2, D3> PartialOrd<u32> for PrefixU32<D0, D1, D2, D3> {
 impl<R, D0, D1, D2, D3> FromBits<R> for PrefixU32<D0, D1, D2, D3>
 where
     R: Read,
-    D0: FromBits<R> + Into<u32>,
-    D1: FromBits<R> + Into<u32>,
-    D2: FromBits<R> + Into<u32>,
-    D3: FromBits<R> + Into<u32>,
+    D0: FromBits<R> + Into<u32> + Default,
+    D1: FromBits<R> + Into<u32> + Default,
+    D2: FromBits<R> + Into<u32> + Default,
+    D3: FromBits<R> + Into<u32> + Default,
 {
     fn from_bits(reader: &mut BitReader<R>) -> Result<Self> {
         let selector = Bits::<U2>::from_bits(reader)?.0;
@@ -161,5 +181,10 @@ where
         };
 
         Ok(Self(x, PhantomData))
+    }
+
+    fn read_bits(&mut self, reader: &mut BitReader<R>) -> Result<()> {
+        *self = Self::from_bits(reader)?;
+        Ok(())
     }
 }

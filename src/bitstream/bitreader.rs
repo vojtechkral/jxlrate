@@ -52,7 +52,7 @@ where
 
     pub fn read<T>(&mut self) -> Result<T>
     where
-        T: FromBits<R>,
+        T: FromBits<R> + Default,
     {
         T::from_bits(self)
     }
